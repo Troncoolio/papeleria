@@ -1,0 +1,52 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}{{ accion }} producto{% endblock %}
+
+{% block content %}
+<a href="{% url 'lista_productos' %}" style="color:#999; text-decoration:none;">← Volver</a>
+<div style="background:#fff; border-radius:10px; padding:2rem; margin-top:1rem; max-width:550px; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+    <h2 style="margin-bottom:1.5rem;">{{ accion }} producto</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for field_name, label in field_list %}{% endfor %}
+
+        <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.3rem;">Nombre</label>
+            <input type="text" name="nombre" value="{{ producto.nombre|default:'' }}" required
+                style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+        </div>
+
+        <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.3rem;">Descripción</label>
+            <textarea name="descripcion" rows="3"
+                style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">{{ producto.descripcion|default:'' }}</textarea>
+        </div>
+
+        <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.3rem;">Precio</label>
+            <input type="number" name="precio" step="0.01" value="{{ producto.precio|default:'' }}" required
+                style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+        </div>
+
+        <div style="margin-bottom:1rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.3rem;">Stock</label>
+            <input type="number" name="stock" value="{{ producto.stock|default:'0' }}"
+                style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+        </div>
+
+        <div style="margin-bottom:1.5rem;">
+            <label style="display:block; font-weight:600; margin-bottom:0.3rem;">Categoría</label>
+            <select name="categoria" style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+                <option value="">Sin categoría</option>
+                {% for cat in categorias %}
+                    <option value="{{ cat.id }}" {% if producto.categoria_id == cat.id %}selected{% endif %}>
+                        {{ cat.nombre }}
+                    </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary">{{ accion }} producto</button>
+    </form>
+</div>
+{% endblock %}

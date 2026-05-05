@@ -1,0 +1,88 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Ticket #{{ venta.id }}{% endblock %}
+
+{% block content %}
+<div style="max-width:420px; margin:0 auto;">
+
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1rem;">
+        <h2>Ticket #{{ venta.id }}</h2>
+        <button onclick="window.print()" class="btn btn-primary">🖨️ Imprimir</button>
+    </div>
+
+    <div id="ticket" style="background:#fff; border-radius:10px; padding:2rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+
+        <!-- Encabezado -->
+        <div style="text-align:center; margin-bottom:1.5rem; border-bottom:2px dashed #eee; padding-bottom:1rem;">
+            <h3 style="font-size:1.4rem; color:#1a1a2e;">📦 Papelería</h3>
+            <p style="color:#999; font-size:0.85rem;">{{ venta.creado_en|date:"d/m/Y H:i" }}</p>
+            {% if venta.cliente %}
+                <p style="margin-top:0.3rem;"><strong>Cliente:</strong> {{ venta.cliente.nombre }}</p>
+            {% endif %}
+            <p><strong>Vendedor:</strong> {{ venta.vendedor.username|default:"—" }}</p>
+        </div>
+
+        <!-- Productos -->
+        <table style="width:100%; border-collapse:collapse; margin-bottom:1rem;">
+            <thead>
+                <tr style="border-bottom:1px solid #eee; color:#999; font-size:0.8rem;">
+                    <th style="text-align:left; padding:0.4rem 0;">Producto</th>
+                    <th style="text-align:center; padding:0.4rem 0;">Cant.</th>
+                    <th style="text-align:right; padding:0.4rem 0;">Precio</th>
+                    <th style="text-align:right; padding:0.4rem 0;">Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for detalle in venta.detalles.all %}
+                <tr style="border-bottom:1px solid #f5f5f5;">
+                    <td style="padding:0.5rem 0; font-size:0.9rem;">{{ detalle.producto.nombre }}</td>
+                    <td style="text-align:center; padding:0.5rem 0; font-size:0.9rem;">{{ detalle.cantidad }}</td>
+                    <td style="text-align:right; padding:0.5rem 0; font-size:0.9rem;">${{ detalle.precio_unitario }}</td>
+                    <td style="text-align:right; padding:0.5rem 0; font-weight:600;">${{ detalle.subtotal }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <!-- Total -->
+        <div style="border-top:2px dashed #eee; padding-top:1rem;">
+            <div style="display:flex; justify-content:space-between; font-size:1.3rem; font-weight:700; margin-bottom:0.5rem;">
+                <span>Total</span>
+                <span style="color:#e94560;">${{ venta.total }}</span>
+            </div>
+            <div style="display:flex; justify-content:space-between; color:#666; font-size:0.9rem;">
+                <span>Método de pago</span>
+                <span>{{ venta.metodo_pago|capfirst }}</span>
+            </div>
+            {% if venta.notas %}
+            <div style="margin-top:0.8rem; color:#999; font-size:0.85rem;">
+                <strong>Notas:</strong> {{ venta.notas }}
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Pie -->
+        <div style="text-align:center; margin-top:1.5rem; color:#999; font-size:0.8rem; border-top:1px solid #eee; padding-top:1rem;">
+            ¡Gracias por su compra!
+        </div>
+
+    </div>
+
+    <div style="margin-top:1rem;">
+        <a href="{% url 'caja' %}" class="btn btn-secondary">← Nueva venta</a>
+    </div>
+</div>
+
+<!-- Estilos de impresión -->
+<style>
+    @media print {
+        .navbar, button, a.btn { display: none !important; }
+        body { background: white; }
+        #ticket {
+            box-shadow: none;
+            border-radius: 0;
+            padding: 0;
+        }
+    }
+</style>
+{% endblock %}

@@ -1,0 +1,22 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Iniciar sesión{% endblock %}
+
+{% block content %}
+<div style="max-width:420px; margin:3rem auto; background:#fff; padding:2rem; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08);">
+    <h2 style="margin-bottom:1.5rem; color:#1a1a2e;">Iniciar sesión</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+            <div style="margin-bottom:1rem;">
+                <label style="display:block; font-weight:600; margin-bottom:0.3rem;">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <span style="color:#e94560; font-size:0.85rem;">{{ field.errors|join:", " }}</span>
+                {% endif %}
+            </div>
+        {% endfor %}
+        <button type="submit" class="btn btn-primary" style="width:100%; margin-top:0.5rem;">Entrar</button>
+    </form>
+</div>
+{% endblock %}

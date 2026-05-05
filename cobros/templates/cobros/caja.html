@@ -1,0 +1,233 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Caja{% endblock %}
+
+{% block content %}
+<div style="display:grid; grid-template-columns:1fr 380px; gap:1.5rem; align-items:start;">
+
+    <!-- Panel izquierdo: buscador de productos -->
+    <div>
+        <h2 style="margin-bottom:1rem;">Caja</h2>
+
+        <input
+            type="text"
+            id="buscador"
+            placeholder="Buscar producto por nombre..."
+            style="width:100%; padding:0.65rem 1rem; border:1px solid #ccc; border-radius:8px; font-size:1rem; margin-bottom:1rem;"
+        >
+
+        <div id="resultados" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(180px, 1fr)); gap:0.8rem;"></div>
+    </div>
+
+    <!-- Panel derecho: carrito -->
+    <div style="background:#fff; border-radius:12px; padding:1.5rem; box-shadow:0 2px 12px rgba(0,0,0,0.08); position:sticky; top:1rem;">
+        <h3 style="margin-bottom:1rem; color:#1a1a2e;">🧾 Ticket</h3>
+
+        <div id="carrito-vacio" style="color:#999; text-align:center; padding:2rem 0;">
+            Agrega productos al ticket
+        </div>
+
+        <div id="carrito-items"></div>
+
+        <div id="carrito-footer" style="display:none;">
+            <hr style="border:none; border-top:1px solid #eee; margin:1rem 0;">
+
+            <div style="display:flex; justify-content:space-between; font-size:1.2rem; font-weight:700; margin-bottom:1.2rem;">
+                <span>Total</span>
+                <span id="total">$0.00</span>
+            </div>
+
+            <div style="margin-bottom:0.8rem;">
+                <label style="font-weight:600; display:block; margin-bottom:0.3rem;">Método de pago</label>
+                <select id="metodo-pago" style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+                    <option value="efectivo">Efectivo</option>
+                    <option value="tarjeta">Tarjeta</option>
+                    <option value="transferencia">Transferencia</option>
+                </select>
+            </div>
+
+            <div style="margin-bottom:1.2rem;">
+                <label style="font-weight:600; display:block; margin-bottom:0.3rem;">Notas (opcional)</label>
+                <input type="text" id="notas" placeholder="Ej: cliente frecuente"
+                    style="width:100%; padding:0.55rem 0.8rem; border:1px solid #ccc; border-radius:6px;">
+            </div>
+
+            <button onclick="cobrar()"
+                style="width:100%; padding:0.8rem; background:#e94560; color:#fff; border:none; border-radius:8px; font-size:1rem; font-weight:700; cursor:pointer;">
+                Cobrar
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Modal ticket final -->
+<div id="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#fff; border-radius:12px; padding:2rem; max-width:420px; width:90%; text-align:center;">
+        <div style="font-size:3rem;">✅</div>
+        <h3 style="margin:0.5rem 0 0.3rem;">¡Venta registrada!</h3>
+        <p id="modal-info" style="color:#666; margin-bottom:1.5rem;"></p>
+        <button onclick="nuevaVenta()" class="btn btn-primary" style="width:100%;">Nueva venta</button>
+    </div>
+</div>
+
+<script>
+    // ── Estado del carrito ──────────────────────────────────────────
+    let carrito = [];  // [{ producto, cantidad }]
+
+    // ── Buscador ────────────────────────────────────────────────────
+    const buscador = document.getElementById('buscador');
+    let timer = null;
+
+    buscador.addEventListener('input', () => {
+        clearTimeout(timer);
+        timer = setTimeout(() => buscarProductos(buscador.value.trim()), 300);
+    });
+
+    // Cargar todos los productos al entrar
+    buscarProductos('');
+
+    async function buscarProductos(q) {
+        const url = q ? `/api/productos/?q=${encodeURIComponent(q)}` : '/api/productos/';
+        const res = await fetch(url, { headers: { 'X-CSRFToken': getCookie('csrftoken') } });
+        const data = await res.json();
+        renderProductos(data);
+    }
+
+    function renderProductos(productos) {
+        const contenedor = document.getElementById('resultados');
+        if (!productos.length) {
+            contenedor.innerHTML = '<p style="color:#999;">Sin resultados.</p>';
+            return;
+        }
+        contenedor.innerHTML = productos.map(p => `
+            <div onclick="agregarAlCarrito(${p.id}, '${escapar(p.nombre)}', ${p.precio}, ${p.stock})"
+                style="background:#fff; border-radius:10px; padding:1rem; box-shadow:0 2px 6px rgba(0,0,0,0.07);
+                       cursor:pointer; transition:transform 0.15s; border:2px solid transparent;"
+                onmouseover="this.style.borderColor='#e94560'"
+                onmouseout="this.style.borderColor='transparent'">
+                <div style="font-weight:600; margin-bottom:0.3rem;">${p.nombre}</div>
+                <div style="color:#e94560; font-weight:700;">$${parseFloat(p.precio).toFixed(2)}</div>
+                <div style="color:${p.stock > 0 ? '#28a745' : '#dc3545'}; font-size:0.8rem; margin-top:0.3rem;">
+                    ${p.stock > 0 ? `Stock: ${p.stock}` : 'Agotado'}
+                </div>
+            </div>
+        `).join('');
+    }
+
+    // ── Carrito ─────────────────────────────────────────────────────
+    function agregarAlCarrito(id, nombre, precio, stock) {
+        if (stock <= 0) return;
+        const existente = carrito.find(i => i.id === id);
+        if (existente) {
+            if (existente.cantidad >= stock) {
+                alert(`Solo hay ${stock} unidades disponibles.`);
+                return;
+            }
+            existente.cantidad++;
+        } else {
+            carrito.push({ id, nombre, precio: parseFloat(precio), cantidad: 1, stock });
+        }
+        renderCarrito();
+    }
+
+    function cambiarCantidad(id, delta) {
+        const item = carrito.find(i => i.id === id);
+        if (!item) return;
+        item.cantidad += delta;
+        if (item.cantidad <= 0) {
+            carrito = carrito.filter(i => i.id !== id);
+        } else if (item.cantidad > item.stock) {
+            item.cantidad = item.stock;
+        }
+        renderCarrito();
+    }
+
+    function renderCarrito() {
+        const contenedor = document.getElementById('carrito-items');
+        const footer = document.getElementById('carrito-footer');
+        const vacio = document.getElementById('carrito-vacio');
+
+        if (!carrito.length) {
+            contenedor.innerHTML = '';
+            footer.style.display = 'none';
+            vacio.style.display = 'block';
+            document.getElementById('total').textContent = '$0.00';
+            return;
+        }
+
+        vacio.style.display = 'none';
+        footer.style.display = 'block';
+
+        contenedor.innerHTML = carrito.map(item => `
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:0.8rem;">
+                <div style="flex:1; font-size:0.9rem;">
+                    <div style="font-weight:600;">${item.nombre}</div>
+                    <div style="color:#999; font-size:0.8rem;">$${item.precio.toFixed(2)} c/u</div>
+                </div>
+                <div style="display:flex; align-items:center; gap:0.5rem;">
+                    <button onclick="cambiarCantidad(${item.id}, -1)"
+                        style="width:26px; height:26px; border-radius:50%; border:1px solid #ccc; cursor:pointer; background:#f5f5f5;">−</button>
+                    <span style="min-width:20px; text-align:center;">${item.cantidad}</span>
+                    <button onclick="cambiarCantidad(${item.id}, 1)"
+                        style="width:26px; height:26px; border-radius:50%; border:1px solid #ccc; cursor:pointer; background:#f5f5f5;">+</button>
+                </div>
+                <div style="min-width:70px; text-align:right; font-weight:600;">
+                    $${(item.precio * item.cantidad).toFixed(2)}
+                </div>
+            </div>
+        `).join('');
+
+        const total = carrito.reduce((acc, i) => acc + i.precio * i.cantidad, 0);
+        document.getElementById('total').textContent = `$${total.toFixed(2)}`;
+    }
+
+    // ── Cobrar ──────────────────────────────────────────────────────
+    async function cobrar() {
+        if (!carrito.length) return;
+
+        const payload = {
+            metodo_pago: document.getElementById('metodo-pago').value,
+            notas: document.getElementById('notas').value,
+            items: carrito.map(i => ({ producto_id: i.id, cantidad: i.cantidad })),
+        };
+
+        const res = await fetch('/api/cobros/venta/crear/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken'),
+            },
+            body: JSON.stringify(payload),
+        });
+
+        const data = await res.json();
+
+
+        if (res.ok) {
+            window.location.href = `/ticket/${data.id}/`;
+        } else {
+            const errores = JSON.stringify(data, null, 2);
+            alert('Error al registrar la venta:\n' + errores);
+        }
+    }
+
+    function nuevaVenta() {
+        carrito = [];
+        renderCarrito();
+        document.getElementById('modal').style.display = 'none';
+        document.getElementById('notas').value = '';
+        buscarProductos('');
+    }
+
+    // ── Utilidades ──────────────────────────────────────────────────
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    function escapar(str) {
+        return str.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+    }
+</script>
+{% endblock %}

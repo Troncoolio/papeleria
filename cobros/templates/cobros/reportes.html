@@ -1,0 +1,140 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Reportes{% endblock %}
+
+{% block content %}
+<div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
+    <h2>Reportes de ventas</h2>
+    <div style="display:flex; gap:0.5rem;">
+        <button onclick="cargarReporte('dia')" id="btn-dia" class="btn btn-primary">Hoy</button>
+        <button onclick="cargarReporte('semana')" id="btn-semana" class="btn btn-secondary">7 días</button>
+        <button onclick="cargarReporte('mes')" id="btn-mes" class="btn btn-secondary">30 días</button>
+    </div>
+</div>
+
+<!-- Tarjetas resumen -->
+<div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(200px, 1fr)); gap:1rem; margin-bottom:1.5rem;">
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <div style="color:#999; font-size:0.85rem; margin-bottom:0.3rem;">Total vendido</div>
+        <div id="stat-total" style="font-size:2rem; font-weight:700; color:#1a1a2e;">—</div>
+    </div>
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <div style="color:#999; font-size:0.85rem; margin-bottom:0.3rem;">Número de ventas</div>
+        <div id="stat-cantidad" style="font-size:2rem; font-weight:700; color:#1a1a2e;">—</div>
+    </div>
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <div style="color:#999; font-size:0.85rem; margin-bottom:0.3rem;">Ticket promedio</div>
+        <div id="stat-promedio" style="font-size:2rem; font-weight:700; color:#1a1a2e;">—</div>
+    </div>
+</div>
+
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:1.5rem;">
+
+    <!-- Ventas por día -->
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <h3 style="margin-bottom:1rem; color:#1a1a2e;">Ventas por día</h3>
+        <div id="grafica-dias"></div>
+    </div>
+
+    <!-- Top productos -->
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07);">
+        <h3 style="margin-bottom:1rem; color:#1a1a2e;">Top productos</h3>
+        <div id="top-productos"></div>
+    </div>
+
+    <!-- Métodos de pago -->
+    <div style="background:#fff; border-radius:10px; padding:1.5rem; box-shadow:0 2px 8px rgba(0,0,0,0.07); grid-column:span 2;">
+        <h3 style="margin-bottom:1rem; color:#1a1a2e;">Por método de pago</h3>
+        <div id="metodos-pago" style="display:flex; gap:1rem; flex-wrap:wrap;"></div>
+    </div>
+
+</div>
+
+<script>
+    let periodoActual = 'dia';
+
+    async function cargarReporte(periodo) {
+        periodoActual = periodo;
+
+        // Actualizar botones
+        ['dia', 'semana', 'mes'].forEach(p => {
+            const btn = document.getElementById(`btn-${p}`);
+            btn.className = p === periodo ? 'btn btn-primary' : 'btn btn-secondary';
+        });
+
+        const res = await fetch(`/api/cobros/reportes/?periodo=${periodo}`, {
+            headers: { 'X-CSRFToken': getCookie('csrftoken') }
+        });
+        const data = await res.json();
+        renderReporte(data);
+    }
+
+    function renderReporte(data) {
+        const { resumen, por_dia, top_productos, por_metodo } = data;
+
+        // Tarjetas
+        document.getElementById('stat-total').textContent =
+            `$${parseFloat(resumen.total).toFixed(2)}`;
+        document.getElementById('stat-cantidad').textContent =
+            resumen.cantidad;
+        const promedio = resumen.cantidad > 0 ? resumen.total / resumen.cantidad : 0;
+        document.getElementById('stat-promedio').textContent =
+            `$${parseFloat(promedio).toFixed(2)}`;
+
+        // Gráfica de barras — ventas por día
+        const maxTotal = Math.max(...por_dia.map(d => d.total), 1);
+        document.getElementById('grafica-dias').innerHTML = por_dia.length
+            ? por_dia.map(d => `
+                <div style="display:flex; align-items:center; gap:0.8rem; margin-bottom:0.6rem;">
+                    <div style="min-width:80px; font-size:0.8rem; color:#666;">${d.dia}</div>
+                    <div style="flex:1; background:#f0f0f0; border-radius:4px; height:24px; position:relative;">
+                        <div style="width:${(d.total/maxTotal*100).toFixed(1)}%; background:#e94560; height:100%; border-radius:4px;"></div>
+                    </div>
+                    <div style="min-width:70px; text-align:right; font-weight:600; font-size:0.9rem;">
+                        $${parseFloat(d.total).toFixed(2)}
+                    </div>
+                </div>
+            `).join('')
+            : '<p style="color:#999;">Sin ventas en este período.</p>';
+
+        // Top productos
+        document.getElementById('top-productos').innerHTML = top_productos.length
+            ? top_productos.map((p, i) => `
+                <div style="display:flex; justify-content:space-between; align-items:center; padding:0.6rem 0; border-bottom:1px solid #f0f0f0;">
+                    <div>
+                        <span style="color:#e94560; font-weight:700; margin-right:0.5rem;">#${i+1}</span>
+                        ${p.producto__nombre}
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-weight:600;">${p.total_vendido} uds.</div>
+                        <div style="color:#999; font-size:0.8rem;">$${parseFloat(p.ingresos).toFixed(2)}</div>
+                    </div>
+                </div>
+            `).join('')
+            : '<p style="color:#999;">Sin datos.</p>';
+
+        // Métodos de pago
+        const colores = { efectivo: '#28a745', tarjeta: '#007bff', transferencia: '#fd7e14' };
+        document.getElementById('metodos-pago').innerHTML = por_metodo.length
+            ? por_metodo.map(m => `
+                <div style="background:#f8f8f8; border-radius:8px; padding:1rem 1.5rem; min-width:160px;">
+                    <div style="color:${colores[m.metodo_pago] || '#999'}; font-weight:700; font-size:1.1rem; margin-bottom:0.3rem;">
+                        ${m.metodo_pago.charAt(0).toUpperCase() + m.metodo_pago.slice(1)}
+                    </div>
+                    <div style="font-size:1.3rem; font-weight:700;">$${parseFloat(m.total).toFixed(2)}</div>
+                    <div style="color:#999; font-size:0.85rem;">${m.cantidad} venta${m.cantidad !== 1 ? 's' : ''}</div>
+                </div>
+            `).join('')
+            : '<p style="color:#999;">Sin datos.</p>';
+    }
+
+    function getCookie(name) {
+        const value = `; ${document.cookie}`;
+        const parts = value.split(`; ${name}=`);
+        if (parts.length === 2) return parts.pop().split(';').shift();
+    }
+
+    // Cargar al entrar
+    cargarReporte('dia');
+</script>
+{% endblock %}

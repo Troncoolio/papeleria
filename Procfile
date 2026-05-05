@@ -1,0 +1,1 @@
+web: gunicorn papeleria.wsgi --log-file -

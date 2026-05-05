@@ -1,0 +1,17 @@
+{% extends 'inventario/base.html' %}
+
+{% block title %}Eliminar {{ producto.nombre }}{% endblock %}
+
+{% block content %}
+<div style="background:#fff; border-radius:10px; padding:2rem; max-width:480px; margin:2rem auto; box-shadow:0 2px 8px rgba(0,0,0,0.07); text-align:center;">
+    <h2 style="color:#dc3545; margin-bottom:1rem;">¿Eliminar producto?</h2>
+    <p>Estás a punto de eliminar <strong>{{ producto.nombre }}</strong>. Esta acción no se puede deshacer.</p>
+    <div style="margin-top:1.5rem; display:flex; gap:1rem; justify-content:center;">
+        <form method="post">
+            {% csrf_token %}
+            <button type="submit" class="btn btn-danger">Sí, eliminar</button>
+        </form>
+        <a href="{% url 'lista_productos' %}" class="btn btn-secondary">Cancelar</a>
+    </div>
+</div>
+{% endblock %}
