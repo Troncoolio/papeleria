@@ -5,34 +5,92 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{% block title %}Papelería{% endblock %}</title>
     <style>
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: 'Segoe UI', sans-serif; background: #f4f4f4; color: #333; }
-        .navbar { background: #1a1a2e; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-        .navbar a { color: #fff; text-decoration: none; margin-left: 1rem; }
-        .navbar .brand { color: #e94560; font-weight: 700; font-size: 1.2rem; margin-left: 0; }
-        .container { max-width: 1000px; margin: 2rem auto; padding: 0 1rem; }
-        .btn { display: inline-block; padding: 0.55rem 1.3rem; border-radius: 6px; text-decoration: none; font-weight: 600; border: none; cursor: pointer; font-size: 0.9rem; }
-        .btn-primary { background: #e94560; color: #fff; }
-        .btn-primary:hover { background: #c73652; }
-        .btn-secondary { background: #eee; color: #333; }
-        .btn-secondary:hover { background: #ddd; }
-        .btn-danger { background: #dc3545; color: #fff; }
-        .alert { padding: 0.8rem 1rem; border-radius: 6px; margin-bottom: 1rem; background: #d4edda; border-left: 4px solid #28a745; color: #155724; }
+        *, *::before, *::after { 
+            box-sizing: border-box; 
+            margin: 0; 
+            padding: 0;
+        }
+        
+        body {
+            font-family: 'Segoe UI', sans-serif; 
+            background: #f4f4f4; 
+            color: #333;
+        }
+
+        .navbar {
+            background: #1a1a2e; 
+            padding: 1rem 2rem; 
+            display: flex; 
+            justify-content: space-between;
+            align-items: center; 
+        }
+        .navbar a { 
+            color: #fff; 
+            text-decoration: none; 
+            margin-left: 1rem; 
+        }
+        .navbar .brand { 
+            color: #e94560; 
+            font-weight: 700; 
+            font-size: 1.2rem; 
+            margin-left: 0; 
+        }
+        .container { 
+            max-width: 1000px; 
+            margin: 2rem auto; 
+            padding: 0 1rem; 
+        }
+        .btn { 
+            display: inline-block; 
+            padding: 0.55rem 1.3rem; 
+            border-radius: 6px; 
+            text-decoration: none; 
+            font-weight: 600; 
+            border: none; 
+            cursor: pointer; 
+            font-size: 0.9rem; 
+        }
+        .btn-primary { 
+            background: #e94560; 
+            color: #fff; 
+        }
+        .btn-primary:hover { 
+            background: #c73652; 
+        }
+        .btn-secondary { 
+            background: #eee; 
+            color: #333; 
+        }
+        .btn-secondary:hover { 
+            background: #ddd; 
+        }
+        .btn-danger { 
+            background: #dc3545; 
+            color: #fff; 
+        }
+        .alert { 
+            padding: 0.8rem 1rem; 
+            border-radius: 6px; 
+            margin-bottom: 1rem; 
+            background: #d4edda; 
+            border-left: 4px solid #28a745; 
+            color: #155724; 
+        }
     </style>
 </head>
 <body>
     <nav class="navbar">
-        <a href="{% url 'lista_productos' %}" class="brand">📦 Papelería</a>
+        <a href="{% url 'lista_productos' %}" class="brand">Nickely</a>
         <div>
             {% if user.is_authenticated %}
-                <a href="{% url 'crear_producto' %}">+ Nuevo producto</a>
+                <a href="{% url 'crear_producto' %}">Nuevo producto</a>
                 <a href="{% url 'admin:index' %}">Admin</a>
             {% else %}
                 <a href="{% url 'admin:index' %}">Login</a>
             {% endif %}
         </div>
-        <a href="{% url 'caja' %}">💰 Caja</a>
-        <a href="{% url 'reportes' %}">📊 Reportes</a>
+        <a href="{% url 'caja' %}">Caja</a>
+        <a href="{% url 'reportes' %}">Reportes</a>
     </nav>
 
     <div class="container">
